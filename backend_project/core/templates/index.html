@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart File System</title>
+</head>
+<body>
+    <h1>Welcome to Smart File Upload System</h1>
+
+    <h2>Login</h2>
+    <form id="loginForm">
+        Username: <input type="text" id="username"><br>
+        Password: <input type="password" id="password"><br>
+        <button type="submit">Login</button>
+    </form>
+
+    <div id="uploadSection" style="display:none;">
+        <h2>Upload File (OPS only)</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" id="fileInput">
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+
+    <div id="downloadSection" style="display:none;">
+        <h2>Download File (CLIENT only)</h2>
+        File ID: <input type="number" id="fileId">
+        <button onclick="generateDownload()">Get Link</button>
+        <p id="downloadLink"></p>
+    </div>
+    <script>
+        let token = null;
+
+        document.getElementById("loginForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                const res = await fetch("/api/auth/token/login/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!res.ok) {
+                    alert("Login failed!");
+                    return;
+                }
+
+                const data = await res.json();
+                token = data.auth_token;
+
+                // ✅ Now fetch user details
+                const userRes = await fetch("/api/auth/users/me/", {
+                    headers: {
+                        Authorization: "Token " + token
+                    }
+                });
+
+                const userData = await userRes.json();
+
+                alert("Welcome, " + userData.username + " (" + userData.role + ")");
+
+                // Show sections based on role
+                if (userData.role === "OPS") {
+                    document.getElementById("uploadSection").style.display = "block";
+                } else if (userData.role === "CLIENT") {
+                    document.getElementById("downloadSection").style.display = "block";
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Something went wrong.");
+            }
+        });
+    </script>
+
+    
+</body>
+</html>
